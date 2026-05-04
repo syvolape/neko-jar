@@ -4,15 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import {
+  CreateJarFlowBody,
+  CreateJarFlowSlots,
+} from "@/components/create-jar-flow-slots";
 import { PrimaryCtaButton } from "@/components/primary-cta-button";
-
-function goalEmoji(goal: string): string {
-  const g = goal.toLowerCase();
-  if (g.includes("japan") || g.includes("tokyo") || g.includes("osaka"))
-    return "🇯🇵";
-  if (g.includes("travel") || g.includes("trip")) return "✈️";
-  return "🎯";
-}
+import { getGoalEmojiKeywordOrDefault } from "@/lib/goal-emoji-keywords";
+import { getGoalEmojiSmart } from "@/lib/get-goal-emoji-smart";
 
 function formatDigits(digits: string): string {
   if (!digits) return "";
@@ -28,11 +26,24 @@ type Props = {
 export default function CreateGoalAmountScreen({ goalName }: Props) {
   const router = useRouter();
   const [amountDigits, setAmountDigits] = useState("");
+  const [emoji, setEmoji] = useState(() =>
+    getGoalEmojiKeywordOrDefault(goalName),
+  );
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getGoalEmojiSmart(goalName).then((next) => {
+      if (!cancelled) setEmoji(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [goalName]);
 
   const displayValue = useMemo(
     () => formatDigits(amountDigits),
@@ -40,10 +51,9 @@ export default function CreateGoalAmountScreen({ goalName }: Props) {
   );
 
   const amountNumber = amountDigits ? parseInt(amountDigits, 10) : 0;
+  const hasAmount = amountDigits.length > 0;
   const canSubmit =
     amountDigits.length > 0 && !Number.isNaN(amountNumber) && amountNumber > 0;
-
-  const emoji = goalEmoji(goalName);
 
   return (
     <div className="flex min-h-screen justify-center bg-neutral-100">
@@ -82,49 +92,54 @@ export default function CreateGoalAmountScreen({ goalName }: Props) {
           <span aria-hidden className="block w-10" />
         </header>
 
-        <div className="flex min-h-0 flex-1 flex-col px-6 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
-          <div className="flex flex-1 flex-col items-center justify-center gap-12 pb-8 -translate-y-6">
-            <div className="flex flex-col items-center gap-3">
-              <div className="flex size-16 items-center justify-center rounded-[32px] bg-[#f5f5f5] p-4 text-[32px] leading-none">
-                <span aria-hidden>{emoji}</span>
-              </div>
-              {goalName ? (
-                <p className="max-w-[280px] text-center font-outfit text-[20px] font-medium leading-tight text-neutral-950">
-                  {goalName}
-                </p>
-              ) : (
-                <p className="text-center font-outfit text-[20px] font-medium text-neutral-300">
-                  Your goal
-                </p>
-              )}
-            </div>
-
-            <div className="flex w-full max-w-sm flex-col items-center gap-5">
-              <p className="text-center font-outfit text-base font-normal text-neutral-400">
-                Set your goal amount
-              </p>
-              <div className="flex w-full items-center justify-center gap-1.5 font-outfit text-[2rem] font-medium leading-tight">
-                <span className="shrink-0 text-neutral-950">$</span>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  value={displayValue}
-                  placeholder="1,000"
-                  aria-label="Goal amount in dollars"
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/\D/g, "");
-                    const stripped = raw.replace(/^0+(?=\d)/, "");
-                    setAmountDigits(stripped);
-                  }}
-                  className="min-w-0 flex-1 border-0 bg-transparent px-1 py-2 text-center text-neutral-950 outline-none ring-0 placeholder:text-neutral-300 focus:border-0 focus:outline-none focus:ring-0 focus-visible:outline-none"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-auto shrink-0 pt-4">
+        <CreateJarFlowBody
+          middle={
+            <CreateJarFlowSlots
+              icon={
+                <div className="flex size-16 shrink-0 items-center justify-center rounded-[32px] bg-[#f5f5f5] p-4 text-[32px] leading-none">
+                  <span aria-hidden>{emoji}</span>
+                </div>
+              }
+              secondaryLine={
+                goalName ? (
+                  <p className="m-0 max-w-full text-pretty">{goalName}</p>
+                ) : (
+                  <p className="m-0 text-neutral-300">Your goal</p>
+                )
+              }
+              title={<p className="m-0">Set your goal amount</p>}
+              primary={
+                <div className="flex w-full justify-center gap-0">
+                  <div className="inline-flex max-w-full items-baseline gap-0 font-outfit text-[2rem] font-medium leading-none tabular-nums">
+                    <span className="mr-1 shrink-0 text-black" aria-hidden>
+                      $
+                    </span>
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      value={displayValue}
+                      placeholder="1"
+                      aria-label="Goal amount in dollars"
+                      style={{ fieldSizing: "content", width: "auto" }}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, "");
+                        const stripped = raw.replace(/^0+(?=\d)/, "");
+                        setAmountDigits(stripped);
+                      }}
+                      className={`w-auto min-w-0 max-w-none shrink-0 border-0 bg-transparent py-2 pl-0 text-left font-outfit text-[2rem] font-medium leading-none tabular-nums outline-none ring-0 focus:border-0 focus:outline-none focus:ring-0 focus-visible:outline-none ${
+                        hasAmount
+                          ? "text-neutral-950"
+                          : "text-neutral-300 placeholder:text-neutral-300"
+                      }`}
+                    />
+                  </div>
+                </div>
+              }
+            />
+          }
+          footer={
             <PrimaryCtaButton
               type="button"
               disabled={!canSubmit}
@@ -134,13 +149,14 @@ export default function CreateGoalAmountScreen({ goalName }: Props) {
                   goal: goalName.trim() || "My goal",
                   target: String(amountNumber),
                 });
+                q.set("emoji", emoji);
                 router.push(`/jar?${q.toString()}`);
               }}
             >
               Create my Jar
             </PrimaryCtaButton>
-          </div>
-        </div>
+          }
+        />
       </div>
     </div>
   );

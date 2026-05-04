@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { SplashGate } from "@/components/splash-gate";
 import { geistMono, geistSans, outfit } from "./fonts";
 
 export const metadata: Metadata = {
@@ -18,7 +19,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased`}
     >
-      <body className="flex min-h-screen flex-col">{children}</body>
+      <body className="flex min-h-screen flex-col">
+        <SplashGate>{children}</SplashGate>
+      </body>
     </html>
   );
 }

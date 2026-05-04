@@ -1,216 +1,342 @@
 "use client";
 
-import Image from "next/image";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-function goalEmoji(goal: string): string {
-  const g = goal.toLowerCase();
-  if (g.includes("japan") || g.includes("tokyo") || g.includes("osaka"))
-    return "\uD83C\uDDEF\uD83C\uDDF5";
-  if (g.includes("travel") || g.includes("trip")) return "\u2708\uFE0F";
-  return "\uD83C\uDFAF";
-}
+import { JarActions } from "@/components/jar/jar-actions";
+import { JarLeaveGoalSheet } from "@/components/jar/jar-leave-goal-sheet";
+import { JarAmount } from "@/components/jar/jar-amount";
+import { JarPeekCat } from "@/components/jar/jar-peek-cat";
+import { JarHeader } from "@/components/jar/jar-header";
+import { JarHistory } from "@/components/jar/jar-history";
+import { JarPostWithdrawScreen } from "@/components/jar/jar-post-withdraw-screen";
+import { JarStats } from "@/components/jar/jar-stats";
+import { JarVisual } from "@/components/jar/jar-visual";
+import { DEPOSITS_UPDATED, readJarDeposits, savedFromDeposits, type JarDeposit } from "@/lib/jar-deposits";
+import {
+  jarPreviewMockCompletedJarsHistory,
+  jarPreviewMockDeposits,
+  jarPreviewMockPostWithdrawSnapshot,
+  jarPreviewMockSavedAmount,
+  parseJarPreviewState,
+} from "@/lib/jar-preview";
+import { deriveJarState, type JarViewState } from "@/lib/jar-state";
+import {
+  peekAndDrainPostWithdrawalSnapshot,
+  readCompletedJarsHistory,
+  type PostWithdrawalSnapshot,
+} from "@/lib/post-withdrawal-snapshot";
+import { writeJarEarnedSnapshot } from "@/lib/jar-earned-snapshot";
+import { formatUsdDisplay, remainingToGoal } from "@/lib/format-usd";
+import { stringifyGoalJarParams } from "@/lib/goal-jar-search-params";
+import { resolveJarDisplayEmoji } from "@/lib/resolve-jar-display-emoji";
 
-function formatUsdPlain(n: number): string {
-  return n.toLocaleString("en-US", {
-    maximumFractionDigits: 0,
-  });
-}
-
-function formatUsdCurrency(n: number): string {
-  return n.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  });
-}
-
-/** Subtle hiragana repeat on orange (Figma-style texture). */
-function OrangeKanjiPattern() {
-  const hiA = String.fromCharCode(0x3042);
-  const hiI = String.fromCharCode(0x3044);
-  const nihon = String.fromCharCode(0x306b, 0x307b, 0x3093);
-
-  return (
-    <svg
-      className="pointer-events-none absolute inset-0 h-full w-full"
-      aria-hidden
-    >
-      <defs>
-        <pattern
-          id="neko-jar-texture"
-          x="0"
-          y="0"
-          width="88"
-          height="88"
-          patternUnits="userSpaceOnUse"
-        >
-          <text
-            x="6"
-            y="28"
-            fill="#C55F00"
-            opacity="0.22"
-            style={{ fontFamily: "system-ui, sans-serif", fontSize: 15 }}
-          >
-            {hiA}
-          </text>
-          <text
-            x="44"
-            y="52"
-            fill="#C55F00"
-            opacity="0.18"
-            style={{ fontFamily: "system-ui, sans-serif", fontSize: 13 }}
-          >
-            {hiI}
-          </text>
-          <text
-            x="22"
-            y="72"
-            fill="#C55F00"
-            opacity="0.2"
-            style={{ fontFamily: "system-ui, sans-serif", fontSize: 14 }}
-          >
-            {nihon}
-          </text>
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#neko-jar-texture)" />
-    </svg>
-  );
-}
-
-/** Glass jar illustration (asset: /public/jar.svg). */
-function JarIllustration() {
-  return (
-    <Image
-      src="/jar.svg"
-      alt=""
-      width={280}
-      height={280}
-      className="mx-auto h-[min(280px,42vw)] w-auto max-w-[280px]"
-      aria-hidden
-    />
-  );
-}
-
-function TrendUpIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-    >
-      <path
-        d="M4 16l4-4 4 4 8-8"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M16 8h4v4"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+function successHref(goalName: string, targetAmount: number): string {
+  return `/success?goal=${encodeURIComponent(goalName)}&target=${targetAmount}`;
 }
 
 type Props = {
   goalName: string;
   targetAmount: number;
-  savedAmount: number;
+  /** After goal success, user returns with `continuing=1` (no redirect to /success). */
+  continuingSuppressed: boolean;
 };
 
 export default function JarScreen({
   goalName,
   targetAmount,
-  savedAmount,
+  continuingSuppressed,
 }: Props) {
-  const flagEmoji = goalEmoji(goalName);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const previewState = useMemo(
+    () => parseJarPreviewState(searchParams.get("state")),
+    [searchParams],
+  );
+
+  const emojiParam = searchParams.get("emoji");
+  const flagEmoji = useMemo(
+    () => resolveJarDisplayEmoji(goalName, emojiParam),
+    [goalName, emojiParam],
+  );
+  const [deposits, setDeposits] = useState<JarDeposit[]>([]);
+  const [earnedLive, setEarnedLive] = useState<{ prev: number; cur: number }>({
+    prev: 0,
+    cur: 0,
+  });
+  const [withdrawSnapshot, setWithdrawSnapshot] =
+    useState<PostWithdrawalSnapshot | null>(null);
+  const [hasEverReachedTarget, setHasEverReachedTarget] = useState(
+    continuingSuppressed,
+  );
+  const [leaveGoalSheetOpen, setLeaveGoalSheetOpen] = useState(false);
+
+  const postWithdrawDrainOnce = useRef(false);
+  const prevSavedRef = useRef<number | null>(null);
+
+  useLayoutEffect(() => {
+    if (previewState) return;
+    if (postWithdrawDrainOnce.current) return;
+    postWithdrawDrainOnce.current = true;
+    const snap = peekAndDrainPostWithdrawalSnapshot();
+    if (snap) setWithdrawSnapshot(snap);
+  }, [previewState]);
+
+  const reloadDeposits = useCallback(() => {
+    setDeposits(readJarDeposits(goalName, targetAmount));
+  }, [goalName, targetAmount]);
+
+  useEffect(() => {
+    if (previewState) return;
+    reloadDeposits();
+  }, [previewState, reloadDeposits]);
+
+  useEffect(() => {
+    if (previewState) return;
+    const onUpdate = () => reloadDeposits();
+    window.addEventListener(DEPOSITS_UPDATED, onUpdate);
+    return () => window.removeEventListener(DEPOSITS_UPDATED, onUpdate);
+  }, [previewState, reloadDeposits]);
+
+  const savedAmountReal = useMemo(() => savedFromDeposits(deposits), [deposits]);
+
+  const savedAmount = useMemo(
+    () =>
+      previewState
+        ? jarPreviewMockSavedAmount(previewState, targetAmount)
+        : savedAmountReal,
+    [previewState, savedAmountReal, targetAmount],
+  );
+
+  const sortedDeposits = useMemo(() => {
+    if (previewState) {
+      return [...jarPreviewMockDeposits(previewState, targetAmount)].sort(
+        (a, b) => b.timestamp - a.timestamp,
+      );
+    }
+    return [...deposits].sort((a, b) => b.timestamp - a.timestamp);
+  }, [previewState, deposits, targetAmount]);
+
+  useEffect(() => {
+    if (previewState === "post-withdraw") {
+      setHasEverReachedTarget(true);
+      return;
+    }
+    if (previewState) return;
+    if (targetAmount > 0 && savedAmountReal >= targetAmount) {
+      setHasEverReachedTarget(true);
+    }
+  }, [previewState, savedAmountReal, targetAmount]);
+
+  const showingPostWithdraw =
+    !previewState && withdrawSnapshot !== null;
+  const previouslyCompleted =
+    previewState === "post-withdraw" ? true : hasEverReachedTarget;
+
+  const derivedJarState = useMemo(
+    () =>
+      deriveJarState({
+        savedAmount,
+        targetAmount,
+        previouslyCompleted,
+        showingPostWithdraw,
+      }),
+    [savedAmount, targetAmount, previouslyCompleted, showingPostWithdraw],
+  );
+
+  const jarState: JarViewState = previewState ?? derivedJarState;
+
+  useEffect(() => {
+    if (previewState) return;
+    if (continuingSuppressed) {
+      prevSavedRef.current = savedAmountReal;
+      return;
+    }
+    if (targetAmount <= 0) return;
+
+    const prev = prevSavedRef.current;
+    const next = savedAmountReal;
+
+    if (next < targetAmount) {
+      prevSavedRef.current = next;
+      return;
+    }
+
+    const href = successHref(goalName, targetAmount);
+    if (prev !== null && prev < targetAmount) {
+      router.push(href);
+    } else if (prev === null) {
+      router.replace(href);
+    }
+    prevSavedRef.current = next;
+  }, [
+    previewState,
+    continuingSuppressed,
+    savedAmountReal,
+    targetAmount,
+    goalName,
+    router,
+  ]);
+
+  const withdrawHref = useMemo(
+    () =>
+      `/withdraw?${stringifyGoalJarParams({
+        goalName,
+        targetAmount,
+        continuing: continuingSuppressed || undefined,
+        emoji: flagEmoji,
+      })}`,
+    [goalName, targetAmount, continuingSuppressed, flagEmoji],
+  );
+
+  const depositHref = useMemo(() => {
+    const continuing = savedAmount >= targetAmount && targetAmount > 0;
+    return `/deposit?${stringifyGoalJarParams({
+      goalName,
+      targetAmount,
+      continuing: continuing || undefined,
+      emoji: flagEmoji,
+    })}`;
+  }, [goalName, savedAmount, targetAmount, flagEmoji]);
+
+  const progress = useMemo(() => {
+    if (targetAmount <= 0) return 0;
+    return Math.min(1, savedAmount / targetAmount);
+  }, [savedAmount, targetAmount]);
+  const remaining = remainingToGoal(targetAmount, savedAmount);
+  const goalProgressComplete =
+    targetAmount > 0 && savedAmount >= targetAmount;
+
+  const formatHistoryLabel = (timestamp: number): string => {
+    const elapsedMs = Date.now() - timestamp;
+    const elapsedMinutes = Math.floor(elapsedMs / 60000);
+    if (elapsedMinutes < 1) return "Just now";
+    if (elapsedMinutes < 60) return `${elapsedMinutes} min ago`;
+    const elapsedHours = Math.floor(elapsedMinutes / 60);
+    if (elapsedHours < 24) return `${elapsedHours} hour${elapsedHours === 1 ? "" : "s"} ago`;
+    const elapsedDays = Math.floor(elapsedHours / 24);
+    return `${elapsedDays} day${elapsedDays === 1 ? "" : "s"} ago`;
+  };
+
+  useEffect(() => {
+    setEarnedLive({ prev: 0, cur: 0 });
+    const earningsPerSecond = (savedAmount * 0.05) / (365 * 24 * 60 * 60);
+    const incrementPerTick = earningsPerSecond * 5;
+    const intervalId = window.setInterval(() => {
+      setEarnedLive(({ cur }) => ({
+        prev: cur,
+        cur: cur + incrementPerTick,
+      }));
+    }, 5000);
+    return () => window.clearInterval(intervalId);
+  }, [savedAmount]);
+
+  useEffect(() => {
+    writeJarEarnedSnapshot(earnedLive.cur);
+  }, [earnedLive.cur]);
+
+  const postWithdrawSnapshotResolved = useMemo(() => {
+    if (jarState !== "post-withdraw") return null;
+    if (previewState === "post-withdraw") {
+      return jarPreviewMockPostWithdrawSnapshot(goalName, targetAmount);
+    }
+    return withdrawSnapshot;
+  }, [
+    jarState,
+    previewState,
+    goalName,
+    targetAmount,
+    withdrawSnapshot,
+  ]);
+
+  const completedJarsForPostWithdraw = useMemo(() => {
+    if (jarState !== "post-withdraw") return [];
+    if (previewState === "post-withdraw") {
+      return jarPreviewMockCompletedJarsHistory(goalName, targetAmount);
+    }
+    return readCompletedJarsHistory();
+  }, [jarState, previewState, goalName, targetAmount, withdrawSnapshot]);
+
+  if (jarState === "post-withdraw" && postWithdrawSnapshotResolved) {
+    return (
+      <JarPostWithdrawScreen
+        snapshot={postWithdrawSnapshotResolved}
+        completedJars={completedJarsForPostWithdraw}
+      />
+    );
+  }
 
   return (
     <div className="flex min-h-screen justify-center bg-[#F5F5F5]">
-      <div className="flex min-h-screen w-full max-w-[420px] flex-col bg-white">
-        {/* Orange header + pattern */}
-        <div className="relative shrink-0 bg-[#FE9302] pb-28 pt-[max(0.75rem,env(safe-area-inset-top))]">
-          <OrangeKanjiPattern />
+      <div className="relative flex min-h-screen w-full max-w-[420px] flex-col bg-white">
+        <div className="relative shrink-0">
+          <div className="relative bg-[#F97316] pb-28 pt-[max(0.75rem,env(safe-area-inset-top))]">
+            <div
+              className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
+              style={{ backgroundImage: "url('/jar-top-pattern.png')" }}
+              aria-hidden
+            />
+            <JarPeekCat motionSuppressed={leaveGoalSheetOpen} />
+          </div>
         </div>
 
-        {/* White sheet overlaps orange */}
-        <div className="relative z-20 -mt-10 flex flex-1 flex-col pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-          <div className="relative rounded-t-[20px] bg-white px-5 pb-10 pt-16 shadow-[0_-8px_32px_rgba(0,0,0,0.06)]">
-            {/* Flag badge overlaps top edge */}
-            <div
-              className="absolute left-1/2 top-0 flex size-[52px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-[0_8px_24px_rgba(0,0,0,0.1)]"
-              aria-hidden
-            >
-              <span className="text-[28px] leading-none">{flagEmoji}</span>
-            </div>
-
-            <div className="flex flex-col items-center pt-2">
-              <h1 className="text-center font-outfit text-[22px] font-bold leading-tight tracking-[-0.02em] text-neutral-950">
-                {goalName}
-              </h1>
-              <div className="mt-5 h-px w-full max-w-[280px] bg-neutral-200" />
-
-              <p className="mt-8 font-outfit text-[40px] font-bold leading-[44px] tracking-[-0.03em] text-neutral-950">
-                $ {formatUsdPlain(savedAmount)}
-              </p>
-              <p className="mt-2 text-center font-outfit text-[15px] font-normal leading-5 text-neutral-400">
-                {formatUsdCurrency(targetAmount)} to reach your goal
-              </p>
-
-              <div className="mt-10 flex w-full justify-center">
-                <JarIllustration />
-              </div>
-
-              {/* Earn card */}
-              <div className="mt-10 flex w-full items-center gap-3 rounded-2xl border border-neutral-100 bg-white px-4 py-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-                <div className="flex shrink-0 items-start pt-0.5">
-                  <TrendUpIcon className="text-[#22C55E]" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-outfit text-[16px] font-bold leading-snug text-neutral-950">
-                    Earn up to 5% per year
-                  </p>
-                  <p className="mt-1 font-outfit text-[13px] font-normal leading-relaxed text-neutral-400">
-                    Your savings grow automatically over time
-                  </p>
-                </div>
-                <Image
-                  src="/earn-card-banner.svg"
-                  alt=""
-                  width={120}
-                  height={120}
-                  className="size-[120px] shrink-0"
-                  aria-hidden
+        <div className="relative z-20 flex min-h-0 flex-1 flex-col -mt-10">
+          <div className="min-h-0 flex-1">
+            <div className="relative rounded-t-[32px] bg-[#F5F5F5] px-5 pb-[120px] pt-14 shadow-[0_-8px_32px_rgba(0,0,0,0.06)]">
+              <div className="relative z-10 flex flex-col items-center pt-0">
+                <JarHeader goalName={goalName} />
+                <JarAmount
+                  savedAmount={savedAmount}
+                  remaining={remaining}
+                  goalProgressComplete={goalProgressComplete}
+                  formatUsdCurrency={formatUsdDisplay}
+                />
+                <JarVisual
+                  jarState={jarState}
+                  progress={progress}
+                  targetAmount={targetAmount}
+                />
+                <JarStats
+                  jarState={jarState}
+                  earnedAmount={earnedLive.cur}
+                  previousEarnedAmount={earnedLive.prev}
+                />
+                <JarHistory
+                  entries={sortedDeposits}
+                  formatHistoryLabel={formatHistoryLabel}
                 />
               </div>
             </div>
           </div>
-
-          {/* Bottom actions */}
-          <div className="mt-8 grid grid-cols-2 gap-3 px-1">
-            <button
-              type="button"
-              className="flex h-14 items-center justify-center rounded-2xl bg-neutral-200 font-outfit text-[17px] font-semibold text-neutral-950 transition active:scale-[0.98] active:bg-neutral-300"
-            >
-              Break Jar
-            </button>
-            <button
-              type="button"
-              className="flex h-14 items-center justify-center rounded-2xl bg-[#FE9302] font-outfit text-[17px] font-semibold text-white shadow-[0_8px_24px_rgba(254,147,2,0.35)] transition active:scale-[0.98]"
-            >
-              Add Funds
-            </button>
+          <div
+            className="pointer-events-none absolute left-1/2 top-0 z-[100] flex size-[72px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
+            aria-hidden
+          >
+            <span className="text-[38px] leading-none">{flagEmoji}</span>
           </div>
         </div>
+
+        <JarActions
+          depositHref={depositHref}
+          breakJar={
+            goalProgressComplete
+              ? { mode: "link", withdrawHref }
+              : {
+                  mode: "confirm",
+                  onPress: () => setLeaveGoalSheetOpen(true),
+                }
+          }
+        />
+        <JarLeaveGoalSheet
+          open={leaveGoalSheetOpen}
+          onOpenChange={setLeaveGoalSheetOpen}
+          goalName={goalName}
+          savedAmount={savedAmount}
+          onWithdrawAnyway={() => {
+            setLeaveGoalSheetOpen(false);
+            router.push(withdrawHref);
+          }}
+        />
       </div>
     </div>
   );

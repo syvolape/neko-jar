@@ -1,10 +1,7 @@
 import Image from "next/image";
 
 import { PrimaryCtaButton } from "@/components/primary-cta-button";
-
-/** Hero orange panel: flat top, convex dip along bottom edge (center lowest). viewBox scales with header via preserveAspectRatio="none". */
-const HERO_ORANGE_PATH =
-  "M0 0 H390 V428 Q195 518 0 428 Z";
+import { HERO_PANEL_PATH, HERO_PANEL_VIEW_BOX } from "@/lib/hero-curved-path";
 
 export default function Home() {
   return (
@@ -14,15 +11,11 @@ export default function Home() {
         <div className="relative min-h-[460px] w-full shrink-0 overflow-hidden px-6 pt-10 pb-14">
           <svg
             className="pointer-events-none absolute left-0 right-0 top-0 z-0 block h-[520px] w-full"
-            viewBox="0 0 390 560"
+            viewBox={HERO_PANEL_VIEW_BOX}
             preserveAspectRatio="none"
             aria-hidden
           >
-            <path
-              fill="#FE9302"
-              d={HERO_ORANGE_PATH}
-              style={{ height: "500px" }}
-            />
+            <path fill="#FE9302" d={HERO_PANEL_PATH} />
           </svg>
           <div className="relative z-10 flex w-full flex-col items-center gap-8 pb-2">
             <Image

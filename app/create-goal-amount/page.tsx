@@ -10,5 +10,5 @@ export default async function CreateGoalAmountPage(props: {
   } catch {
     goalName = goal;
   }
-  return <CreateGoalAmountScreen goalName={goalName} />;
+  return <CreateGoalAmountScreen key={goalName} goalName={goalName} />;
 }

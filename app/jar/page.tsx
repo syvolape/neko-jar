@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import JarScreen from "./jar-screen";
 
 function parsePositiveInt(value: string | undefined, fallback: number): number {
@@ -11,7 +13,7 @@ export default async function JarPage(props: {
   searchParams: Promise<{
     goal?: string;
     target?: string;
-    saved?: string;
+    continuing?: string;
   }>;
 }) {
   const sp = await props.searchParams;
@@ -31,21 +33,22 @@ export default async function JarPage(props: {
     ? parsePositiveInt(sp.target, 1000)
     : 1000;
 
-  let savedAmount: number;
-  if (sp.saved !== undefined && String(sp.saved).length > 0) {
-    savedAmount = parsePositiveInt(sp.saved, 0);
-  } else if (hasTargetParam) {
-    savedAmount = 0;
-  } else {
-    savedAmount = Math.min(320, targetAmount);
-  }
-  savedAmount = Math.min(savedAmount, targetAmount);
+  const continuingSuppressed = sp.continuing === "1";
 
   return (
-    <JarScreen
-      goalName={goalName}
-      targetAmount={targetAmount}
-      savedAmount={savedAmount}
-    />
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen justify-center bg-[#F5F5F5]">
+          <div className="min-h-screen w-full max-w-[420px] bg-white" />
+        </div>
+      }
+    >
+      <JarScreen
+        key={`${goalName}:${targetAmount}`}
+        goalName={goalName}
+        targetAmount={targetAmount}
+        continuingSuppressed={continuingSuppressed}
+      />
+    </Suspense>
   );
 }

@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import {
+  CreateJarFlowBody,
+  CreateJarFlowSlots,
+} from "@/components/create-jar-flow-slots";
 import { PrimaryCtaButton } from "@/components/primary-cta-button";
 
 type Props = {
@@ -54,26 +58,29 @@ export default function CreateGoalStepClient({ initialGoal }: Props) {
           <span aria-hidden className="block w-10" />
         </header>
 
-        <div className="flex min-h-0 flex-1 flex-col px-6 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
-          <div className="flex flex-1 flex-col justify-center gap-5 pb-8 -translate-y-6">
-            <p className="text-center font-outfit text-base font-normal text-neutral-400">
-              What are you saving for?
-            </p>
-            <input
-              ref={inputRef}
-              type="text"
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              placeholder="Trip to Japan"
-              enterKeyHint="done"
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck={false}
-              className="w-full border-0 bg-transparent px-2 py-2 text-center font-outfit text-[2rem] font-medium leading-tight text-neutral-950 outline-none ring-0 placeholder:text-neutral-300 focus:border-0 focus:outline-none focus:ring-0 focus-visible:outline-none"
+        <CreateJarFlowBody
+          middle={
+            <CreateJarFlowSlots
+              icon={null}
+              secondaryLine={null}
+              title={<p className="m-0">What are you saving for?</p>}
+              primary={
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value)}
+                  placeholder="Trip to Japan"
+                  enterKeyHint="done"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className="w-full border-0 bg-transparent px-2 py-2 text-center font-outfit text-[2rem] font-medium leading-none text-neutral-950 outline-none ring-0 placeholder:text-neutral-300 focus:border-0 focus:outline-none focus:ring-0 focus-visible:outline-none"
+                />
+              }
             />
-          </div>
-
-          <div className="mt-auto shrink-0 pt-4">
+          }
+          footer={
             <PrimaryCtaButton
               type="button"
               disabled={!canContinue}
@@ -85,8 +92,8 @@ export default function CreateGoalStepClient({ initialGoal }: Props) {
             >
               Continue
             </PrimaryCtaButton>
-          </div>
-        </div>
+          }
+        />
       </div>
     </div>
   );

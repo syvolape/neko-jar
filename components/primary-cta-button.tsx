@@ -1,11 +1,19 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-const baseClassName =
-  "flex h-14 w-full items-center justify-center rounded-2xl px-6 font-outfit text-[20px] font-medium text-white transition";
+import {
+  primaryActionBgShadow,
+  primaryActionLabel,
+  primaryActionPress,
+} from "@/lib/primary-action-styles";
 
-const enabledClassName =
-  "bg-[#FE9302] shadow-[0_8px_24px_rgba(254,147,2,0.35)] active:scale-[0.98]";
+const baseClassName = [
+  "flex h-14 w-full items-center justify-center rounded-2xl px-6",
+  primaryActionLabel,
+  primaryActionPress,
+].join(" ");
+
+const enabledClassName = primaryActionBgShadow;
 
 const disabledClassName =
   "cursor-not-allowed bg-neutral-300 shadow-none";

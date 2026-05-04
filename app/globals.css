@@ -29,3 +29,17 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes neko-loader-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.07);
+  }
+}
+
+.animate-neko-loader-pulse {
+  animation: neko-loader-pulse 0.9s ease-in-out infinite;
+}
