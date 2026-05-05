@@ -2,43 +2,46 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 
 import ConfettiBurst from "@/components/confetti-burst";
-import { stringifyGoalJarParams } from "@/lib/goal-jar-search-params";
 import { HERO_PANEL_PATH, HERO_PANEL_VIEW_BOX } from "@/lib/hero-curved-path";
 import { getGoalEmojiKeywordOrDefault } from "@/lib/goal-emoji-keywords";
-
-type Props = {
-  goalName: string;
-  targetAmount: number;
-};
+import { patchJarSession, readJarSession } from "@/lib/jar-session";
 
 const GREEN = "#4BB45E";
 
 const breakJarLinkClassName =
   "flex h-14 w-full items-center justify-center rounded-2xl bg-neutral-200 font-outfit text-[20px] font-semibold leading-none text-neutral-950 transition active:scale-[0.98] active:bg-neutral-300";
 
-export default function SuccessScreen({ goalName, targetAmount }: Props) {
-  const devState =
-    process.env.NODE_ENV === "development" ? "&state=full" : "";
-  const jarContinuingHref =
-    `/jar?${stringifyGoalJarParams({
-      goalName,
-      targetAmount,
-      continuing: true,
-    })}${devState}`;
+export default function SuccessScreen() {
+  const [sessionReady, setSessionReady] = useState(false);
+  const [goalName, setGoalName] = useState("");
+  const [targetAmount, setTargetAmount] = useState(0);
+  const [emoji, setEmoji] = useState("");
 
-  const withdrawHref = `/withdraw?${stringifyGoalJarParams({
-    goalName,
-    targetAmount,
-    continuing: true,
-  })}`;
+  useEffect(() => {
+    const session = readJarSession();
+    if (!session) {
+      window.location.replace("/create-goal");
+      return;
+    }
+    setGoalName(session.goalName);
+    setTargetAmount(session.targetAmount);
+    setEmoji(session.emoji || getGoalEmojiKeywordOrDefault(session.goalName));
+    setSessionReady(true);
+  }, []);
 
-  const emoji = getGoalEmojiKeywordOrDefault(goalName);
-  const targetDisplay = targetAmount.toLocaleString("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  });
+  const targetDisplay = useMemo(
+    () =>
+      targetAmount.toLocaleString("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }),
+    [targetAmount],
+  );
+
+  if (!sessionReady) return null;
 
   return (
     <div className="flex min-h-screen justify-center bg-[#F5F5F5]">
@@ -57,7 +60,10 @@ export default function SuccessScreen({ goalName, targetAmount }: Props) {
           <div className="relative z-[110] flex min-h-[min(34svh,280px)] flex-col">
             <div className="flex justify-end px-5 pt-[max(0.5rem,env(safe-area-inset-top))]">
               <Link
-                href={jarContinuingHref}
+                href="/jar"
+                onClick={() => {
+                  patchJarSession({ continuingSuppressed: true });
+                }}
                 aria-label="Close"
                 className="flex size-10 shrink-0 items-center justify-center rounded-full border border-neutral-200/90 bg-white text-neutral-950 shadow-[0_2px_10px_rgba(0,0,0,0.08)] transition active:scale-95"
               >
@@ -119,13 +125,16 @@ export default function SuccessScreen({ goalName, targetAmount }: Props) {
 
           <div className="mt-auto flex w-full flex-col gap-3 pt-10">
             <Link
-              href={jarContinuingHref}
+              href="/jar"
+              onClick={() => {
+                patchJarSession({ continuingSuppressed: true });
+              }}
               className="flex h-14 w-full items-center justify-center rounded-2xl font-outfit text-[20px] font-semibold text-white transition active:scale-[0.98]"
               style={{ backgroundColor: GREEN }}
             >
               Continue Saving
             </Link>
-            <Link href={withdrawHref} className={breakJarLinkClassName}>
+            <Link href="/withdraw" className={breakJarLinkClassName}>
               Break Jar
             </Link>
           </div>

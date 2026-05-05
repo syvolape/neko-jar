@@ -16,21 +16,13 @@ import {
   sessionPendingCoinDrop,
   type JarDeposit,
 } from "@/lib/jar-deposits";
-import { stringifyGoalJarParams } from "@/lib/goal-jar-search-params";
+import { readJarSession } from "@/lib/jar-session";
 import {
   primaryActionBgShadow,
   primaryActionLabel,
   primaryActionPressAlt,
 } from "@/lib/primary-action-styles";
 import { resolveJarDisplayEmoji } from "@/lib/resolve-jar-display-emoji";
-
-type Props = {
-  goalName: string;
-  targetAmount: number;
-  /** Jar was showing full tracker (celebration already dismissed); keep it on Back. */
-  continuingJarView: boolean;
-  emojiFromJar?: string | null;
-};
 
 function parseAmount(raw: string): number {
   if (!raw || raw === ".") return 0;
@@ -53,13 +45,12 @@ function formatAmountDisplay(raw: string): string {
   return decPart !== undefined ? `${withGrouping}.${decPart}` : withGrouping;
 }
 
-export default function DepositScreen({
-  goalName,
-  targetAmount,
-  continuingJarView,
-  emojiFromJar = null,
-}: Props) {
+export default function DepositScreen() {
   const router = useRouter();
+  const [sessionReady, setSessionReady] = useState(false);
+  const [goalName, setGoalName] = useState("");
+  const [targetAmount, setTargetAmount] = useState(0);
+  const [emojiFromJar, setEmojiFromJar] = useState<string | null>(null);
   const [deposits, setDeposits] = useState<JarDeposit[]>([]);
   const [amountRaw, setAmountRaw] = useState("");
   const [earnRateInfoOpen, setEarnRateInfoOpen] = useState(false);
@@ -69,7 +60,20 @@ export default function DepositScreen({
     [goalName, emojiFromJar],
   );
 
+  useEffect(() => {
+    const session = readJarSession();
+    if (!session) {
+      router.replace("/create-goal");
+      return;
+    }
+    setGoalName(session.goalName);
+    setTargetAmount(session.targetAmount);
+    setEmojiFromJar(session.emoji);
+    setSessionReady(true);
+  }, [router]);
+
   const reloadDeposits = useCallback(() => {
+    if (!goalName || targetAmount <= 0) return;
     setDeposits(readJarDeposits(goalName, targetAmount));
   }, [goalName, targetAmount]);
 
@@ -119,12 +123,7 @@ export default function DepositScreen({
   };
 
   const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0"];
-  const backHref = `/jar?${stringifyGoalJarParams({
-    goalName,
-    targetAmount,
-    continuing: continuingJarView || undefined,
-    emoji: displayEmoji,
-  })}`;
+  const backHref = "/jar";
 
   const handleDeposit = () => {
     if (!canDeposit) return;
@@ -138,15 +137,10 @@ export default function DepositScreen({
     appendJarCoinCount(goalName, targetAmount, depositAmount);
     appendJarDeposit(goalName, targetAmount, depositAmount);
     notifyJarDepositsUpdated();
-    router.push(
-      `/jar?${stringifyGoalJarParams({
-        goalName,
-        targetAmount,
-        continuing: continuingJarView || undefined,
-        emoji: displayEmoji,
-      })}`,
-    );
+    router.push("/jar");
   };
+
+  if (!sessionReady) return null;
 
   return (
     <div className="flex min-h-screen justify-center bg-[#F5F5F5]">

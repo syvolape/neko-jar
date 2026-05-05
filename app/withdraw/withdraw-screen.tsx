@@ -20,18 +20,10 @@ import {
   type JarDeposit,
 } from "@/lib/jar-deposits";
 import { readJarEarnedSnapshot } from "@/lib/jar-earned-snapshot";
-import { stringifyGoalJarParams } from "@/lib/goal-jar-search-params";
 import { jarBadgeStatusForActiveJar } from "@/lib/jar-badge-status";
+import { readJarSession } from "@/lib/jar-session";
 import { writePostWithdrawalSnapshot } from "@/lib/post-withdrawal-snapshot";
 import { resolveJarDisplayEmoji } from "@/lib/resolve-jar-display-emoji";
-
-type Props = {
-  goalName: string;
-  targetAmount: number;
-  continuingJarView: boolean;
-  /** Emoji query from `/jar` so withdrawal UI matches the jar header. */
-  emojiFromJar?: string | null;
-};
 
 function formatGrouped(n: number): string {
   return n.toLocaleString("en-US", { minimumFractionDigits: 0 });
@@ -45,13 +37,12 @@ function formatTotalEarnedFromJar(usd: number): string {
   })} USDC`;
 }
 
-export default function WithdrawScreen({
-  goalName,
-  targetAmount,
-  continuingJarView,
-  emojiFromJar = null,
-}: Props) {
+export default function WithdrawScreen() {
   const router = useRouter();
+  const [sessionReady, setSessionReady] = useState(false);
+  const [goalName, setGoalName] = useState("");
+  const [targetAmount, setTargetAmount] = useState(0);
+  const [emojiFromJar, setEmojiFromJar] = useState<string | null>(null);
   const [deposits, setDeposits] = useState<JarDeposit[]>([]);
   const totalEarnedUsd = useMemo(
     () => readJarEarnedSnapshot() ?? 0,
@@ -63,7 +54,20 @@ export default function WithdrawScreen({
     [goalName, emojiFromJar],
   );
 
+  useEffect(() => {
+    const session = readJarSession();
+    if (!session) {
+      router.replace("/create-goal");
+      return;
+    }
+    setGoalName(session.goalName);
+    setTargetAmount(session.targetAmount);
+    setEmojiFromJar(session.emoji);
+    setSessionReady(true);
+  }, [router]);
+
   const reloadDeposits = useCallback(() => {
+    if (!goalName || targetAmount <= 0) return;
     setDeposits(readJarDeposits(goalName, targetAmount));
   }, [goalName, targetAmount]);
 
@@ -83,12 +87,7 @@ export default function WithdrawScreen({
     [savedAmount, targetAmount],
   );
 
-  const backHref = `/jar?${stringifyGoalJarParams({
-    goalName,
-    targetAmount,
-    continuing: continuingJarView || undefined,
-    emoji: displayEmoji,
-  })}`;
+  const backHref = "/jar";
 
   const handleWithdraw = () => {
     const depositCopy = deposits.slice();
@@ -106,17 +105,12 @@ export default function WithdrawScreen({
       withdrewAt: Date.now(),
       emoji: displayEmoji,
     });
-      router.push(
-        `/jar?${stringifyGoalJarParams({
-          goalName,
-          targetAmount,
-          continuing: continuingJarView || undefined,
-          emoji: displayEmoji,
-        })}`,
-      );
+    router.push("/jar");
   };
 
   const flag = displayEmoji;
+
+  if (!sessionReady) return null;
 
   return (
     <div className="flex min-h-screen justify-center bg-[#F5F5F5]">

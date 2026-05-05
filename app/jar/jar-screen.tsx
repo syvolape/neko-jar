@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 import { JarActions } from "@/components/jar/jar-actions";
 import { JarLeaveGoalSheet } from "@/components/jar/jar-leave-goal-sheet";
@@ -28,33 +28,30 @@ import {
 } from "@/lib/post-withdrawal-snapshot";
 import { writeJarEarnedSnapshot } from "@/lib/jar-earned-snapshot";
 import { formatUsdDisplay, remainingToGoal } from "@/lib/format-usd";
-import { stringifyGoalJarParams } from "@/lib/goal-jar-search-params";
+import { readJarSession } from "@/lib/jar-session";
 import { resolveJarDisplayEmoji } from "@/lib/resolve-jar-display-emoji";
 
-function successHref(goalName: string, targetAmount: number): string {
-  return `/success?goal=${encodeURIComponent(goalName)}&target=${targetAmount}`;
-}
-
-type Props = {
-  goalName: string;
-  targetAmount: number;
-  /** After goal success, user returns with `continuing=1` (no redirect to /success). */
-  continuingSuppressed: boolean;
-};
-
-export default function JarScreen({
-  goalName,
-  targetAmount,
-  continuingSuppressed,
-}: Props) {
+export default function JarScreen() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const previewState = useMemo(
-    () => parseJarPreviewState(searchParams.get("state")),
-    [searchParams],
-  );
+  const [sessionReady, setSessionReady] = useState(false);
+  const [goalName, setGoalName] = useState("");
+  const [targetAmount, setTargetAmount] = useState(0);
+  const [continuingSuppressed, setContinuingSuppressed] = useState(false);
+  const [emojiParam, setEmojiParam] = useState<string | null>(null);
+  const previewState = useMemo(() => parseJarPreviewState(null), []);
 
-  const emojiParam = searchParams.get("emoji");
+  useEffect(() => {
+    const session = readJarSession();
+    if (!session) {
+      router.replace("/create-goal");
+      return;
+    }
+    setGoalName(session.goalName);
+    setTargetAmount(session.targetAmount);
+    setContinuingSuppressed(session.continuingSuppressed);
+    setEmojiParam(session.emoji);
+    setSessionReady(true);
+  }, [router]);
   const flagEmoji = useMemo(
     () => resolveJarDisplayEmoji(goalName, emojiParam),
     [goalName, emojiParam],
@@ -83,6 +80,7 @@ export default function JarScreen({
   }, [previewState]);
 
   const reloadDeposits = useCallback(() => {
+    if (!goalName || targetAmount <= 0) return;
     setDeposits(readJarDeposits(goalName, targetAmount));
   }, [goalName, targetAmount]);
 
@@ -162,7 +160,7 @@ export default function JarScreen({
       return;
     }
 
-    const href = successHref(goalName, targetAmount);
+    const href = "/success";
     if (prev !== null && prev < targetAmount) {
       router.push(href);
     } else if (prev === null) {
@@ -178,26 +176,8 @@ export default function JarScreen({
     router,
   ]);
 
-  const withdrawHref = useMemo(
-    () =>
-      `/withdraw?${stringifyGoalJarParams({
-        goalName,
-        targetAmount,
-        continuing: continuingSuppressed || undefined,
-        emoji: flagEmoji,
-      })}`,
-    [goalName, targetAmount, continuingSuppressed, flagEmoji],
-  );
-
-  const depositHref = useMemo(() => {
-    const continuing = savedAmount >= targetAmount && targetAmount > 0;
-    return `/deposit?${stringifyGoalJarParams({
-      goalName,
-      targetAmount,
-      continuing: continuing || undefined,
-      emoji: flagEmoji,
-    })}`;
-  }, [goalName, savedAmount, targetAmount, flagEmoji]);
+  const withdrawHref = "/withdraw";
+  const depositHref = "/deposit";
 
   const progress = useMemo(() => {
     if (targetAmount <= 0) return 0;
@@ -256,6 +236,8 @@ export default function JarScreen({
     }
     return readCompletedJarsHistory();
   }, [jarState, previewState, goalName, targetAmount, withdrawSnapshot]);
+
+  if (!sessionReady) return null;
 
   if (jarState === "post-withdraw" && postWithdrawSnapshotResolved) {
     return (

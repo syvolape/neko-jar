@@ -12,6 +12,12 @@ import {
 import { PrimaryCtaButton } from "@/components/primary-cta-button";
 import { getGoalEmojiKeywordOrDefault } from "@/lib/goal-emoji-keywords";
 import { getGoalEmojiSmart } from "@/lib/get-goal-emoji-smart";
+import {
+  clearJarDraftGoal,
+  readJarDraftGoal,
+  readJarSession,
+  writeJarSession,
+} from "@/lib/jar-session";
 
 function formatDigits(digits: string): string {
   if (!digits) return "";
@@ -20,18 +26,31 @@ function formatDigits(digits: string): string {
   return n.toLocaleString("en-US");
 }
 
-type Props = {
-  goalName: string;
-};
-
-export default function CreateGoalAmountScreen({ goalName }: Props) {
+export default function CreateGoalAmountScreen() {
   const router = useRouter();
+  const [goalName, setGoalName] = useState("");
+  const [sessionReady, setSessionReady] = useState(false);
   const [amountDigits, setAmountDigits] = useState("");
   const [emoji, setEmoji] = useState(() =>
-    getGoalEmojiKeywordOrDefault(goalName),
+    getGoalEmojiKeywordOrDefault(""),
   );
 
   useEffect(() => {
+    const draftGoal = readJarDraftGoal();
+    if (!draftGoal) {
+      router.replace("/create-goal");
+      return;
+    }
+    const existingSession = readJarSession();
+    setGoalName(draftGoal);
+    setEmoji(
+      existingSession?.emoji || getGoalEmojiKeywordOrDefault(draftGoal),
+    );
+    setSessionReady(true);
+  }, [router]);
+
+  useEffect(() => {
+    if (!goalName) return;
     let cancelled = false;
     void getGoalEmojiSmart(goalName).then((next) => {
       if (!cancelled) setEmoji(next);
@@ -51,16 +70,16 @@ export default function CreateGoalAmountScreen({ goalName }: Props) {
   const canSubmit =
     amountDigits.length > 0 && !Number.isNaN(amountNumber) && amountNumber > 0;
 
+  if (!sessionReady) {
+    return null;
+  }
+
   return (
     <div className="flex min-h-screen justify-center bg-neutral-100">
       <div className="flex min-h-screen w-full max-w-[420px] flex-col bg-white shadow-sm">
         <header className="grid shrink-0 grid-cols-[2.5rem_1fr_2.5rem] items-center gap-2 px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
           <Link
-            href={
-              goalName
-                ? `/create-goal?goal=${encodeURIComponent(goalName)}`
-                : "/create-goal"
-            }
+            href="/create-goal"
             className="flex h-10 w-10 items-center justify-start text-neutral-950"
             aria-label="Back"
           >
@@ -138,12 +157,14 @@ export default function CreateGoalAmountScreen({ goalName }: Props) {
               disabled={!canSubmit}
               onClick={() => {
                 if (!canSubmit) return;
-                const q = new URLSearchParams({
-                  goal: goalName.trim() || "My goal",
-                  target: String(amountNumber),
+                writeJarSession({
+                  goalName: goalName.trim() || "My goal",
+                  targetAmount: amountNumber,
+                  emoji,
+                  continuingSuppressed: false,
                 });
-                q.set("emoji", emoji);
-                router.push(`/jar?${q.toString()}`);
+                clearJarDraftGoal();
+                router.push("/jar");
               }}
             >
               Create my Jar
