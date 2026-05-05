@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   CreateJarFlowBody,
@@ -30,11 +30,6 @@ export default function CreateGoalAmountScreen({ goalName }: Props) {
   const [emoji, setEmoji] = useState(() =>
     getGoalEmojiKeywordOrDefault(goalName),
   );
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,8 +52,8 @@ export default function CreateGoalAmountScreen({ goalName }: Props) {
     amountDigits.length > 0 && !Number.isNaN(amountNumber) && amountNumber > 0;
 
   return (
-    <div className="flex min-h-dvh justify-center bg-neutral-100">
-      <div className="flex min-h-dvh w-full max-w-[420px] flex-col bg-white shadow-sm">
+    <div className="flex min-h-screen justify-center bg-neutral-100">
+      <div className="flex min-h-screen w-full max-w-[420px] flex-col bg-white shadow-sm">
         <header className="grid shrink-0 grid-cols-[2.5rem_1fr_2.5rem] items-center gap-2 px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
           <Link
             href={
@@ -114,7 +109,6 @@ export default function CreateGoalAmountScreen({ goalName }: Props) {
                       $
                     </span>
                     <input
-                      ref={inputRef}
                       type="text"
                       inputMode="numeric"
                       autoComplete="off"

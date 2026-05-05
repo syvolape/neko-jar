@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import {
   CreateJarFlowBody,
@@ -18,17 +18,12 @@ type Props = {
 export default function CreateGoalStepClient({ initialGoal }: Props) {
   const router = useRouter();
   const [goal, setGoal] = useState(initialGoal);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
 
   const canContinue = goal.trim().length > 0;
 
   return (
-    <div className="flex min-h-dvh justify-center bg-neutral-100">
-      <div className="flex min-h-dvh w-full max-w-[420px] flex-col bg-white shadow-sm">
+    <div className="flex min-h-screen justify-center bg-neutral-100">
+      <div className="flex min-h-screen w-full max-w-[420px] flex-col bg-white shadow-sm">
         <header className="grid shrink-0 grid-cols-[2.5rem_1fr_2.5rem] items-center gap-2 px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
           <Link
             href="/"
@@ -65,7 +60,6 @@ export default function CreateGoalStepClient({ initialGoal }: Props) {
               title={<p className="m-0">What are you saving for?</p>}
               primary={
                 <input
-                  ref={inputRef}
                   type="text"
                   value={goal}
                   onChange={(e) => setGoal(e.target.value)}

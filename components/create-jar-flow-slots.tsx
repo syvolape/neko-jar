@@ -104,36 +104,12 @@ export function CreateJarStepProgress({ activeStep }: StepProgressProps) {
  * Same shell on both create-goal steps.
  */
 export function CreateJarFlowBody({ middle, footer }: BodyProps) {
-  const [desktopBottomInset, setDesktopBottomInset] = useState(0);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const updateDesktopInset = () => {
-      setDesktopBottomInset(window.matchMedia("(min-width: 768px)").matches ? 16 : 0);
-    };
-
-    updateDesktopInset();
-    window.addEventListener("resize", updateDesktopInset);
-
-    return () => {
-      window.removeEventListener("resize", updateDesktopInset);
-    };
-  }, []);
-
   return (
-    <div className="flex min-h-0 flex-1 flex-col px-6">
-      <div className="flex min-h-0 flex-1 flex-col justify-start pt-10 pb-28">
+    <div className="flex min-h-0 flex-1 flex-col justify-between px-6 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
+      <div className="flex min-h-0 flex-1 flex-col justify-start pt-10 pb-3">
         {middle}
       </div>
-      <div
-        className="fixed left-1/2 z-20 w-full max-w-[420px] -translate-x-1/2 px-6 pt-4"
-        style={{
-          bottom: `calc(env(safe-area-inset-bottom) + ${desktopBottomInset}px)`,
-        }}
-      >
-        {footer}
-      </div>
+      <div className="shrink-0 pt-4">{footer}</div>
     </div>
   );
 }

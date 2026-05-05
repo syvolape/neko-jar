@@ -258,7 +258,7 @@ export default function DepositScreen({
             Deposit
           </button>
 
-          <div className="mt-4 grid grid-cols-3 place-items-center gap-y-1 pb-1">
+          <div className="mt-4 grid grid-cols-3 place-items-center gap-y-0.5 pb-1">
             {keys.map((key) => (
               <button
                 key={key}
