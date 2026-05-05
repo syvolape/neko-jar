@@ -30,10 +30,15 @@ export default function CreateGoalAmountScreen() {
   const router = useRouter();
   const [goalName, setGoalName] = useState("");
   const [sessionReady, setSessionReady] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [amountDigits, setAmountDigits] = useState("");
   const [emoji, setEmoji] = useState(() =>
     getGoalEmojiKeywordOrDefault(""),
   );
+
+  useEffect(() => {
+    router.prefetch("/jar");
+  }, [router]);
 
   useEffect(() => {
     const draftGoal = readJarDraftGoal();
@@ -154,9 +159,10 @@ export default function CreateGoalAmountScreen() {
           footer={
             <PrimaryCtaButton
               type="button"
-              disabled={!canSubmit}
+              disabled={!canSubmit || isSubmitting}
               onClick={() => {
-                if (!canSubmit) return;
+                if (!canSubmit || isSubmitting) return;
+                setIsSubmitting(true);
                 writeJarSession({
                   goalName: goalName.trim() || "My goal",
                   targetAmount: amountNumber,

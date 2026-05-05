@@ -248,7 +248,22 @@ export default function JarScreen() {
     return readCompletedJarsHistory();
   }, [jarState, previewState, goalName, targetAmount, withdrawSnapshot]);
 
-  if (!sessionReady) return null;
+  if (!sessionReady) {
+    return (
+      <div className="flex min-h-screen justify-center bg-[#F5F5F5]">
+        <div className="relative flex min-h-screen w-full max-w-[420px] flex-col bg-white">
+          <div className="relative shrink-0">
+            <div className="relative bg-[#F97316] pb-28 pt-[max(0.75rem,env(safe-area-inset-top))]" />
+          </div>
+          <div className="relative z-20 flex min-h-0 flex-1 flex-col -mt-10">
+            <div className="min-h-0 flex-1">
+              <div className="relative rounded-t-[32px] bg-[#F5F5F5] px-5 pb-[120px] pt-14 shadow-[0_-8px_32px_rgba(0,0,0,0.06)]" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (jarState === "post-withdraw" && postWithdrawSnapshotResolved) {
     return (

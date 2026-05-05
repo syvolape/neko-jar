@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import {
   CreateJarFlowBody,
@@ -10,22 +10,11 @@ import {
   CreateJarStepProgress,
 } from "@/components/create-jar-flow-slots";
 import { PrimaryCtaButton } from "@/components/primary-cta-button";
-import { readJarDraftGoal, readJarSession, writeJarDraftGoal } from "@/lib/jar-session";
+import { writeJarDraftGoal } from "@/lib/jar-session";
 
 export default function CreateGoalStepClient() {
   const router = useRouter();
   const [goal, setGoal] = useState("");
-
-  useEffect(() => {
-    const draftGoal = readJarDraftGoal();
-    if (draftGoal) {
-      setGoal(draftGoal);
-      return;
-    }
-    const session = readJarSession();
-    if (!session) return;
-    setGoal(session.goalName);
-  }, []);
 
   const canContinue = goal.trim().length > 0;
 
