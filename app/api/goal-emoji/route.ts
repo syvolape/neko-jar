@@ -19,11 +19,9 @@ function normalizeGoal(goalName: string): string {
 }
 
 async function openAiSingleEmoji(goalName: string): Promise<string> {
-  console.log("API KEY:", process.env.OPENAI_API_KEY);
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return DEFAULT_GOAL_EMOJI;
 
-  console.log("Calling AI for goal:", goalName);
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -42,13 +40,11 @@ async function openAiSingleEmoji(goalName: string): Promise<string> {
   });
 
   if (!res.ok) {
-    const errBody = await res.text();
-    console.log("AI response:", { status: res.status, body: errBody });
+    await res.text();
     return DEFAULT_GOAL_EMOJI;
   }
 
   const payload: unknown = await res.json();
-  console.log("AI response:", payload);
   const content = extractChatContent(payload);
   const grapheme = takeFirstGrapheme(content);
   return grapheme || DEFAULT_GOAL_EMOJI;
