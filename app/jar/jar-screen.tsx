@@ -46,10 +46,21 @@ export default function JarScreen() {
       router.replace("/create-goal");
       return;
     }
+    const initialDeposits = readJarDeposits(
+      session.goalName,
+      session.targetAmount,
+    );
+    const initialSavedAmount = savedFromDeposits(initialDeposits);
     setGoalName(session.goalName);
     setTargetAmount(session.targetAmount);
     setContinuingSuppressed(session.continuingSuppressed);
     setEmojiParam(session.emoji);
+    setDeposits(initialDeposits);
+    setHasEverReachedTarget(
+      session.continuingSuppressed ||
+        (session.targetAmount > 0 && initialSavedAmount >= session.targetAmount),
+    );
+    prevSavedRef.current = initialSavedAmount;
     setSessionReady(true);
   }, [router]);
   const flagEmoji = useMemo(
