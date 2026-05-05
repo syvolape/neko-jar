@@ -20,6 +20,12 @@ function closestJarState(percent: number): number {
   );
 }
 
+function jarStateForPercent(percent: number): number {
+  // Special early-progress illustration: only for progress between 0% and 3%.
+  if (percent > 0 && percent < 3) return 1;
+  return closestJarState(percent);
+}
+
 type Props = {
   jarState: JarViewState;
   progress: number;
@@ -32,8 +38,8 @@ export function JarVisual({ jarState, progress, targetAmount }: Props) {
 
   const jarSrc = useMemo(() => {
     const percent = clampPercent(progress * 100);
-    const closest = closestJarState(percent);
-    return `/jar-${closest}.svg`;
+    const state = jarStateForPercent(percent);
+    return `/jar-${state}.svg`;
   }, [progress]);
 
   useEffect(() => {
@@ -65,7 +71,7 @@ export function JarVisual({ jarState, progress, targetAmount }: Props) {
   return (
     <>
       <div className="mt-5 flex w-full justify-center">
-        <div className="relative h-[min(280px,42vw)] w-[min(280px,42vw)] max-h-[280px] max-w-[280px] shrink-0 overflow-visible">
+        <div className="relative h-[280px] w-[280px] shrink-0 overflow-visible">
           {pendingDeposit != null ? (
             <JarDepositCoinDrop
               depositAmount={pendingDeposit}
@@ -78,7 +84,7 @@ export function JarVisual({ jarState, progress, targetAmount }: Props) {
             alt=""
             width={280}
             height={280}
-            className="relative z-10 h-[min(280px,42vw)] w-[min(280px,42vw)] max-h-[280px] max-w-[280px] object-contain"
+            className="relative z-10 h-[280px] w-[280px] object-contain"
             aria-hidden
           />
         </div>

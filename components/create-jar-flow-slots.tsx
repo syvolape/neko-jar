@@ -1,4 +1,7 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 
 /**
  * Shared vertical rhythm for create-goal name and create-goal amount.
@@ -51,17 +54,86 @@ type BodyProps = {
   footer: ReactNode;
 };
 
+type StepProgressProps = {
+  activeStep: 1 | 2;
+};
+
+export function CreateJarStepProgress({ activeStep }: StepProgressProps) {
+  const [secondFilled, setSecondFilled] = useState(false);
+
+  useEffect(() => {
+    if (activeStep < 2) {
+      setSecondFilled(false);
+      return;
+    }
+
+    const id = requestAnimationFrame(() => {
+      setSecondFilled(true);
+    });
+
+    return () => cancelAnimationFrame(id);
+  }, [activeStep]);
+
+  return (
+    <div
+      className="flex items-center justify-center gap-3"
+      aria-label={`Step ${activeStep} of 2`}
+      role="img"
+    >
+      <span
+        className={`block h-1 w-16 rounded-full ${
+          activeStep >= 1 ? "bg-neutral-950" : "bg-neutral-300"
+        }`}
+        aria-hidden
+      />
+      <span
+        className="relative block h-1 w-16 overflow-hidden rounded-full bg-neutral-300"
+        aria-hidden
+      >
+        <span
+          className="absolute inset-y-0 left-0 rounded-full bg-neutral-950 transition-[width] duration-500 ease-out"
+          style={{ width: activeStep >= 2 && secondFilled ? "100%" : "0%" }}
+        />
+      </span>
+    </div>
+  );
+}
+
 /**
  * Three zones below the app header: middle content (top-aligned, not vertically centered) + bottom CTA.
  * Same shell on both create-goal steps.
  */
 export function CreateJarFlowBody({ middle, footer }: BodyProps) {
+  const [desktopBottomInset, setDesktopBottomInset] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const updateDesktopInset = () => {
+      setDesktopBottomInset(window.matchMedia("(min-width: 768px)").matches ? 16 : 0);
+    };
+
+    updateDesktopInset();
+    window.addEventListener("resize", updateDesktopInset);
+
+    return () => {
+      window.removeEventListener("resize", updateDesktopInset);
+    };
+  }, []);
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col justify-between px-6 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
-      <div className="flex min-h-0 flex-1 flex-col justify-start pt-10 pb-3">
+    <div className="flex min-h-0 flex-1 flex-col px-6">
+      <div className="flex min-h-0 flex-1 flex-col justify-start pt-10 pb-28">
         {middle}
       </div>
-      <div className="shrink-0 pt-4">{footer}</div>
+      <div
+        className="fixed left-1/2 z-20 w-full max-w-[420px] -translate-x-1/2 px-6 pt-4"
+        style={{
+          bottom: `calc(env(safe-area-inset-bottom) + ${desktopBottomInset}px)`,
+        }}
+      >
+        {footer}
+      </div>
     </div>
   );
 }

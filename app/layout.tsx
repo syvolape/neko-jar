@@ -7,6 +7,10 @@ export const metadata: Metadata = {
   title: "Neko Jar — Goal-based savings",
   description:
     "Set your goal, start saving, and track progress with Neko Jar.",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/webclip.png",
+  },
 };
 
 export default function RootLayout({

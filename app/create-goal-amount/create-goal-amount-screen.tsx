@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CreateJarFlowBody,
   CreateJarFlowSlots,
+  CreateJarStepProgress,
 } from "@/components/create-jar-flow-slots";
 import { PrimaryCtaButton } from "@/components/primary-cta-button";
 import { getGoalEmojiKeywordOrDefault } from "@/lib/goal-emoji-keywords";
@@ -56,8 +57,8 @@ export default function CreateGoalAmountScreen({ goalName }: Props) {
     amountDigits.length > 0 && !Number.isNaN(amountNumber) && amountNumber > 0;
 
   return (
-    <div className="flex min-h-screen justify-center bg-neutral-100">
-      <div className="flex min-h-screen w-full max-w-[420px] flex-col bg-white shadow-sm">
+    <div className="flex min-h-dvh justify-center bg-neutral-100">
+      <div className="flex min-h-dvh w-full max-w-[420px] flex-col bg-white shadow-sm">
         <header className="grid shrink-0 grid-cols-[2.5rem_1fr_2.5rem] items-center gap-2 px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
           <Link
             href={
@@ -86,9 +87,7 @@ export default function CreateGoalAmountScreen({ goalName }: Props) {
               />
             </svg>
           </Link>
-          <h1 className="text-center font-outfit text-[22px] font-medium leading-tight text-neutral-950">
-            My Savings Jar
-          </h1>
+          <CreateJarStepProgress activeStep={2} />
           <span aria-hidden className="block w-10" />
         </header>
 
