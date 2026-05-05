@@ -12,6 +12,8 @@ import {
 import { PrimaryCtaButton } from "@/components/primary-cta-button";
 import { getGoalEmojiKeywordOrDefault } from "@/lib/goal-emoji-keywords";
 import { getGoalEmojiSmart } from "@/lib/get-goal-emoji-smart";
+import { clearJarCoinCount } from "@/lib/jar-coin-count";
+import { clearJarDeposits } from "@/lib/jar-deposits";
 import {
   clearJarDraftGoal,
   readJarDraftGoal,
@@ -163,8 +165,12 @@ export default function CreateGoalAmountScreen() {
               onClick={() => {
                 if (!canSubmit || isSubmitting) return;
                 setIsSubmitting(true);
+                const nextGoalName = goalName.trim() || "My goal";
+                // Starting a new jar should always reset prior saved progress.
+                clearJarDeposits(nextGoalName, amountNumber);
+                clearJarCoinCount(nextGoalName, amountNumber);
                 writeJarSession({
-                  goalName: goalName.trim() || "My goal",
+                  goalName: nextGoalName,
                   targetAmount: amountNumber,
                   emoji,
                   continuingSuppressed: false,
