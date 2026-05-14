@@ -24,9 +24,10 @@ export type DeriveJarStateInput = {
 export function deriveJarState({
   savedAmount,
   targetAmount,
-  previouslyCompleted: _previouslyCompleted,
+  previouslyCompleted,
   showingPostWithdraw,
 }: DeriveJarStateInput): JarViewState {
+  void previouslyCompleted;
   if (showingPostWithdraw) return "post-withdraw";
 
   if (savedAmount <= 0) return "empty";

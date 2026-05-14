@@ -64,8 +64,6 @@ export function JarCoins({ progress, coinCount }: Props) {
     [coinCount, progress],
   );
   const prevCount = useRef(resolvedCoinCount);
-  // Snapshot previous count for this render; updated after paint below.
-  // eslint-disable-next-line react-hooks/refs
   const previousCount = prevCount.current;
 
   useEffect(() => {
@@ -83,7 +81,6 @@ export function JarCoins({ progress, coinCount }: Props) {
         const newCoinDelay = isNew ? (index - previousCount) * 0.05 : 0;
 
         return (
-          // eslint-disable-next-line @next/next/no-img-element
           <motion.img
             key={`jar-coin-${index}`}
             src="/coin.svg"
