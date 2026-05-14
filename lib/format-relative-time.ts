@@ -1,3 +1,5 @@
+/** Shared app helper for format relative time. */
+
 export function formatRelativeTime(pastMs: number): string {
   const elapsedMs = Date.now() - pastMs;
   const elapsedMinutes = Math.floor(elapsedMs / 60000);

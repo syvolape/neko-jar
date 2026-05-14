@@ -1,3 +1,5 @@
+/** Client-side emoji resolver that tries cache, keyword matching, and finally the API before falling back to a default. */
+
 import {
   DEFAULT_GOAL_EMOJI,
   getGoalEmojiFromKeywords,

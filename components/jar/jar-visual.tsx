@@ -1,10 +1,12 @@
 "use client";
 
+/** Jar-specific UI module: jar visual. */
+
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { JarDepositCoinDrop } from "@/components/jar-deposit-coin-drop";
-import { EarnRatePromoCard } from "@/components/earn-rate-promo-card";
+import { JarDepositCoinDrop } from "@/components/jar/jar-deposit-coin-drop";
+import { EarnRatePromoCard } from "@/components/ui/earn-rate-promo-card";
 import { sessionPendingCoinDrop } from "@/lib/jar-deposits";
 import type { JarViewState } from "@/lib/jar-state";
 
@@ -37,6 +39,7 @@ export function JarVisual({ jarState, progress, targetAmount }: Props) {
   const [pendingDeposit, setPendingDeposit] = useState<number | null>(null);
 
   const jarSrc = useMemo(() => {
+    // We use a small fixed sprite set, so progress is snapped to the closest illustration state.
     const percent = clampPercent(progress * 100);
     const state = jarStateForPercent(percent);
     return `/jar-${state}.svg`;
@@ -48,6 +51,7 @@ export function JarVisual({ jarState, progress, targetAmount }: Props) {
     const id = requestAnimationFrame(() => {
       if (cancelled) return;
       try {
+        // This one-time value is set by the deposit screen so the jar can animate the incoming coins.
         const raw = sessionStorage.getItem(sessionPendingCoinDrop);
         if (raw == null || raw === "") return;
         sessionStorage.removeItem(sessionPendingCoinDrop);

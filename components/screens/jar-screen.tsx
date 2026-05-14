@@ -1,5 +1,7 @@
 "use client";
 
+/** Main stateful orchestrator for the `/jar` route. It hydrates storage-backed data, derives the active jar mode, and switches between saving, success, and post-withdraw states. */
+
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -12,7 +14,13 @@ import { JarHistory } from "@/components/jar/jar-history";
 import { JarPostWithdrawScreen } from "@/components/jar/jar-post-withdraw-screen";
 import { JarStats } from "@/components/jar/jar-stats";
 import { JarVisual } from "@/components/jar/jar-visual";
-import { DEPOSITS_UPDATED, readJarDeposits, savedFromDeposits, type JarDeposit } from "@/lib/jar-deposits";
+import {
+  DEPOSITS_UPDATED,
+  readJarDeposits,
+  savedFromDeposits,
+  sessionPendingCoinDrop,
+  type JarDeposit,
+} from "@/lib/jar-deposits";
 import {
   jarPreviewMockCompletedJarsHistory,
   jarPreviewMockDeposits,
@@ -40,7 +48,21 @@ export default function JarScreen() {
   const [emojiParam, setEmojiParam] = useState<string | null>(null);
   const previewState = useMemo(() => parseJarPreviewState(null), []);
 
+  // A deposit stores a one-shot amount in sessionStorage so `/jar` can infer "before" vs "after" state.
+  const readPendingDepositAmount = useCallback((): number | null => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.sessionStorage.getItem(sessionPendingCoinDrop);
+      if (raw == null || raw === "") return null;
+      const value = Number(raw);
+      return Number.isFinite(value) && value > 0 ? value : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
+    // Hydrate the entire jar experience from the active session plus local/session storage snapshots.
     const session = readJarSession();
     if (!session) {
       router.replace("/create-goal");
@@ -60,9 +82,15 @@ export default function JarScreen() {
       session.continuingSuppressed ||
         (session.targetAmount > 0 && initialSavedAmount >= session.targetAmount),
     );
-    prevSavedRef.current = initialSavedAmount;
+    const pendingDepositAmount = readPendingDepositAmount();
+    // When we arrive from `/deposit`, subtract the pending amount so the success redirect can detect
+    // that the goal was just crossed instead of assuming the jar started in a completed state.
+    prevSavedRef.current =
+      pendingDepositAmount !== null
+        ? Math.max(0, initialSavedAmount - pendingDepositAmount)
+        : initialSavedAmount;
     setSessionReady(true);
-  }, [router]);
+  }, [readPendingDepositAmount, router]);
   const flagEmoji = useMemo(
     () => resolveJarDisplayEmoji(goalName, emojiParam),
     [goalName, emojiParam],
@@ -83,6 +111,7 @@ export default function JarScreen() {
   const prevSavedRef = useRef<number | null>(null);
 
   useLayoutEffect(() => {
+    // The post-withdraw snapshot is a one-time handoff from `/withdraw` back to `/jar`.
     if (previewState) return;
     if (postWithdrawDrainOnce.current) return;
     postWithdrawDrainOnce.current = true;
@@ -158,6 +187,7 @@ export default function JarScreen() {
   useEffect(() => {
     if (previewState) return;
     if (continuingSuppressed) {
+      // After the success screen is dismissed, we keep the current balance as the new baseline.
       prevSavedRef.current = savedAmountReal;
       return;
     }
@@ -172,6 +202,7 @@ export default function JarScreen() {
     }
 
     const href = "/success";
+    // Only open the success route when we cross the target boundary for the first time in this cycle.
     if (prev !== null && prev < targetAmount) {
       router.push(href);
     } else if (prev === null) {
@@ -210,6 +241,7 @@ export default function JarScreen() {
   };
 
   useEffect(() => {
+    // The earned ticker is purely visual, but we keep it in sync with `/withdraw` via a session snapshot.
     setEarnedLive({ prev: 0, cur: 0 });
     const earningsPerSecond = (savedAmount * 0.05) / (365 * 24 * 60 * 60);
     const incrementPerTick = earningsPerSecond * 5;

@@ -1,5 +1,7 @@
 "use client";
 
+/** Jar-specific UI module: jar peek cat. */
+
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const CAT_SRC = "/cat-play.svg";

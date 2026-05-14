@@ -1,3 +1,5 @@
+/** Jar-specific UI module: jar status badge. */
+
 import type { JarBadgeStatus } from "@/lib/jar-badge-status";
 
 type Props = {

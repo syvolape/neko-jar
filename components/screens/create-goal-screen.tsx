@@ -1,5 +1,7 @@
 "use client";
 
+/** Step 1 of the create-goal flow. Collects the goal name and stores it as draft state before navigating to the amount step. */
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -8,14 +10,15 @@ import {
   CreateJarFlowBody,
   CreateJarFlowSlots,
   CreateJarStepProgress,
-} from "@/components/create-jar-flow-slots";
-import { PrimaryCtaButton } from "@/components/primary-cta-button";
+} from "@/components/layout/create-jar-flow-slots";
+import { PrimaryCtaButton } from "@/components/ui/primary-cta-button";
 import { writeJarDraftGoal } from "@/lib/jar-session";
 
-export default function CreateGoalStepClient() {
+export default function CreateGoalScreen() {
   const router = useRouter();
   const [goal, setGoal] = useState("");
 
+  // The primary CTA only unlocks once the user has entered something meaningful.
   const canContinue = goal.trim().length > 0;
 
   return (
@@ -75,8 +78,9 @@ export default function CreateGoalStepClient() {
               type="button"
               disabled={!canContinue}
               onClick={() => {
+                // Step 1 only saves a lightweight draft; the real jar is created on step 2.
                 writeJarDraftGoal(goal);
-                router.push("/create-goal-amount");
+                router.push("/create-goal/amount");
               }}
             >
               Continue

@@ -1,5 +1,7 @@
 "use client";
 
+/** Withdrawal confirmation flow. It summarizes the active jar and persists a post-withdraw snapshot before returning to `/jar`. */
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -21,7 +23,7 @@ import {
 } from "@/lib/jar-deposits";
 import { readJarEarnedSnapshot } from "@/lib/jar-earned-snapshot";
 import { jarBadgeStatusForActiveJar } from "@/lib/jar-badge-status";
-import { readJarSession } from "@/lib/jar-session";
+import { patchJarSession, readJarSession } from "@/lib/jar-session";
 import { writePostWithdrawalSnapshot } from "@/lib/post-withdrawal-snapshot";
 import { resolveJarDisplayEmoji } from "@/lib/resolve-jar-display-emoji";
 
@@ -55,6 +57,7 @@ export default function WithdrawScreen() {
   );
 
   useEffect(() => {
+    // The withdrawal flow only makes sense when a jar session is already active.
     const session = readJarSession();
     if (!session) {
       router.replace("/create-goal");
@@ -93,10 +96,14 @@ export default function WithdrawScreen() {
     const depositCopy = deposits.slice();
     const withdrawn = savedAmount;
 
+    // Clear the live jar first so `/jar` no longer renders the old balance after we navigate back.
     clearJarDeposits(goalName, targetAmount);
     clearJarCoinCount(goalName, targetAmount);
+    // Allow future goal completions to show the success screen again after this reset.
+    patchJarSession({ continuingSuppressed: false });
     notifyJarDepositsUpdated();
 
+    // The post-withdraw view is rendered from `/jar`, so we hand the summary over through a snapshot.
     writePostWithdrawalSnapshot({
       goalName,
       targetAmount,

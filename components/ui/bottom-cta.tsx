@@ -1,3 +1,5 @@
+/** Sticky bottom call-to-action wrapper used on full-screen flows. */
+
 import Link from "next/link";
 import type { ReactNode } from "react";
 

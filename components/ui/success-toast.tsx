@@ -1,5 +1,7 @@
 "use client";
 
+/** Auto-dismissing toast used for lightweight success feedback. */
+
 import { useEffect, useState } from "react";
 
 type Props = {

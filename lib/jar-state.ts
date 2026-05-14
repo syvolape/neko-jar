@@ -1,3 +1,5 @@
+/** Small state machine that turns balances and flow flags into the UI mode shown on the `/jar` route. */
+
 export type JarViewState =
   | "empty"
   | "progress"

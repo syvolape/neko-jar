@@ -1,3 +1,5 @@
+/** Reusable promotional card that advertises the jar's earn rate. */
+
 type Props = {
   className?: string;
 };

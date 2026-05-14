@@ -1,5 +1,7 @@
 "use client";
 
+/** Step 2 of the create-goal flow. Resolves the goal emoji, captures the target amount, and creates the active jar session. */
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -8,8 +10,8 @@ import {
   CreateJarFlowBody,
   CreateJarFlowSlots,
   CreateJarStepProgress,
-} from "@/components/create-jar-flow-slots";
-import { PrimaryCtaButton } from "@/components/primary-cta-button";
+} from "@/components/layout/create-jar-flow-slots";
+import { PrimaryCtaButton } from "@/components/ui/primary-cta-button";
 import { getGoalEmojiKeywordOrDefault } from "@/lib/goal-emoji-keywords";
 import { getGoalEmojiSmart } from "@/lib/get-goal-emoji-smart";
 import { clearJarCoinCount } from "@/lib/jar-coin-count";
@@ -39,10 +41,12 @@ export default function CreateGoalAmountScreen() {
   );
 
   useEffect(() => {
+    // The jar page is the next destination after submit, so prefetch it to keep the handoff snappy.
     router.prefetch("/jar");
   }, [router]);
 
   useEffect(() => {
+    // This step depends on the draft created in step 1. If the draft is missing, restart the flow.
     const draftGoal = readJarDraftGoal();
     if (!draftGoal) {
       router.replace("/create-goal");
@@ -57,6 +61,7 @@ export default function CreateGoalAmountScreen() {
   }, [router]);
 
   useEffect(() => {
+    // We show a fast keyword/default emoji immediately, then upgrade it with the smarter resolver.
     if (!goalName) return;
     let cancelled = false;
     void getGoalEmojiSmart(goalName).then((next) => {
@@ -166,9 +171,10 @@ export default function CreateGoalAmountScreen() {
                 if (!canSubmit || isSubmitting) return;
                 setIsSubmitting(true);
                 const nextGoalName = goalName.trim() || "My goal";
-                // Starting a new jar should always reset prior saved progress.
+                // Creating a jar is the moment we replace any older state for this goal/amount pair.
                 clearJarDeposits(nextGoalName, amountNumber);
                 clearJarCoinCount(nextGoalName, amountNumber);
+                // This session becomes the single source of truth for the active jar across routes.
                 writeJarSession({
                   goalName: nextGoalName,
                   targetAmount: amountNumber,

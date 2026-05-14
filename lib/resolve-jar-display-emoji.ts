@@ -1,3 +1,5 @@
+/** Resolves the emoji shown for a jar from URL/session input, with a safe fallback to keyword matching. */
+
 import { takeFirstGrapheme } from "@/lib/goal-emoji-grapheme";
 import { getGoalEmojiKeywordOrDefault } from "@/lib/goal-emoji-keywords";
 

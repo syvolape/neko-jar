@@ -1,5 +1,7 @@
 "use client";
 
+/** Client-side session storage for the currently active jar and the in-progress create-goal draft. */
+
 export type JarSession = {
   goalName: string;
   targetAmount: number;

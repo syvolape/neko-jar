@@ -1,3 +1,5 @@
+/** Jar-specific UI module: jar actions. */
+
 import Link from "next/link";
 
 import {

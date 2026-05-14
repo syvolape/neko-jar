@@ -1,5 +1,7 @@
 "use client";
 
+/** Informational bottom sheet that explains how the earn rate should be interpreted in the UI. */
+
 import { useId } from "react";
 
 import {

@@ -1,3 +1,5 @@
+/** Development-only helpers for previewing jar states without changing real user data. */
+
 import type { JarDeposit } from "@/lib/jar-deposits";
 import type { JarViewState } from "@/lib/jar-state";
 import type { PostWithdrawalSnapshot } from "@/lib/post-withdrawal-snapshot";

@@ -1,10 +1,12 @@
 "use client";
 
+/** Celebration screen shown the first time a jar crosses its target amount. */
+
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import ConfettiBurst from "@/components/confetti-burst";
+import ConfettiBurst from "@/components/ui/confetti-burst";
 import { HERO_PANEL_PATH, HERO_PANEL_VIEW_BOX } from "@/lib/hero-curved-path";
 import { getGoalEmojiKeywordOrDefault } from "@/lib/goal-emoji-keywords";
 import { patchJarSession, readJarSession } from "@/lib/jar-session";
@@ -21,6 +23,7 @@ export default function SuccessScreen() {
   const [emoji, setEmoji] = useState("");
 
   useEffect(() => {
+    // This screen is pure client UI driven by the active jar session.
     const session = readJarSession();
     if (!session) {
       window.location.replace("/create-goal");
@@ -62,6 +65,7 @@ export default function SuccessScreen() {
               <Link
                 href="/jar"
                 onClick={() => {
+                  // Once the user dismisses celebration, keep `/jar` from immediately reopening it.
                   patchJarSession({ continuingSuppressed: true });
                 }}
                 aria-label="Close"
@@ -127,6 +131,7 @@ export default function SuccessScreen() {
             <Link
               href="/jar"
               onClick={() => {
+                // "Continue Saving" stays on the same jar, so we suppress repeat celebration here too.
                 patchJarSession({ continuingSuppressed: true });
               }}
               className="flex h-14 w-full items-center justify-center rounded-2xl font-outfit text-[20px] font-semibold text-white transition active:scale-[0.98]"

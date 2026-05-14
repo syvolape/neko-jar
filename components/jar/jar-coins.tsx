@@ -1,5 +1,7 @@
 "use client";
 
+/** Jar-specific UI module: jar coins. */
+
 import { useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 

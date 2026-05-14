@@ -1,6 +1,8 @@
+/** Route entry for the main jar experience. Suspense keeps the route lightweight while the client screen hydrates storage-backed state. */
+
 import { Suspense } from "react";
 
-import JarScreen from "./jar-screen";
+import JarScreen from "@/components/screens/jar-screen";
 
 export default function JarPage() {
   return (

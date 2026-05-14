@@ -1,8 +1,10 @@
 "use client";
 
+/** Jar-specific UI module: jar stats. */
+
 import { useState } from "react";
 
-import { EarnRateInfoSheet } from "@/components/earn-rate-info-sheet";
+import { EarnRateInfoSheet } from "@/components/ui/earn-rate-info-sheet";
 import {
   EarnedAmountDisplay,
   formatEarnedFourDecimals,
@@ -26,6 +28,7 @@ export function JarStats({
 }: Props) {
   const [earnRateInfoOpen, setEarnRateInfoOpen] = useState(false);
 
+  // Empty and post-withdraw states intentionally hide this card so it only appears for active jars.
   if (jarState === "empty" || jarState === "post-withdraw") {
     return null;
   }

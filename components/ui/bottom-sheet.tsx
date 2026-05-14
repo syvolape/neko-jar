@@ -1,5 +1,7 @@
 "use client";
 
+/** Reusable bottom-sheet primitive used for informational and confirmation overlays. */
+
 import {
   createContext,
   startTransition,

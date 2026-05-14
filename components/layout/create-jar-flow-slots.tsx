@@ -1,5 +1,7 @@
 "use client";
 
+/** Shared scaffolding for the two-step create-goal flow so both screens keep the same spacing, alignment, and footer rhythm. */
+
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 

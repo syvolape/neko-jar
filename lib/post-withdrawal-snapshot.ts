@@ -1,3 +1,5 @@
+/** Session/local-storage handoff for the post-withdraw summary and previous-jars history. */
+
 import type { JarDeposit } from "@/lib/jar-deposits";
 
 export type PostWithdrawalSnapshot = {

@@ -1,3 +1,5 @@
+/** Local-storage helpers for deposit history, migration from older keys, and cross-screen deposit update signaling. */
+
 export type JarDeposit = {
   amount: number;
   timestamp: number;

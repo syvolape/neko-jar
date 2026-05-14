@@ -1,6 +1,9 @@
+/** Persists how many decorative coins the jar should render for the current goal. */
+
 const MAX_JAR_COINS = 60;
 
 function jarCoinCountKey(goalName: string, targetAmount: number): string {
+  // Goal name + target amount makes the decorative coin count stable per jar.
   return `nekojar:coincount:${goalName}:${targetAmount}`;
 }
 
@@ -38,6 +41,7 @@ export function clearJarCoinCount(goalName: string, targetAmount: number): void 
 
 export function coinIncrementForDeposit(amount: number, targetAmount: number): number {
   if (!(amount > 0)) return 0;
+  // Bigger deposits add more coins, but every valid deposit adds at least one so the jar always reacts.
   const denom = Math.max(1, targetAmount);
   const proportional = Math.round((amount / denom) * MAX_JAR_COINS);
   return Math.max(1, proportional);

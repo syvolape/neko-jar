@@ -1,9 +1,11 @@
 "use client";
 
-import { BottomCTA } from "@/components/bottom-cta";
-import { CompletedJarCard } from "@/components/completed-jar-card";
-import { EarnRatePromoCard } from "@/components/earn-rate-promo-card";
-import { SuccessToast } from "@/components/success-toast";
+/** Jar-specific UI module: jar post withdraw screen. */
+
+import { BottomCTA } from "@/components/ui/bottom-cta";
+import { CompletedJarCard } from "@/components/jar/completed-jar-card";
+import { EarnRatePromoCard } from "@/components/ui/earn-rate-promo-card";
+import { SuccessToast } from "@/components/ui/success-toast";
 import { getGoalEmojiKeywordOrDefault } from "@/lib/goal-emoji-keywords";
 import { jarBadgeStatusAfterWithdrawal } from "@/lib/jar-badge-status";
 import type { PostWithdrawalSnapshot } from "@/lib/post-withdrawal-snapshot";
@@ -30,6 +32,7 @@ export function JarPostWithdrawScreen({
   snapshot,
   completedJars,
 }: Props) {
+  // The freshly written snapshot guarantees at least one row even before the persisted history loads.
   const rows =
     completedJars.length > 0 ? completedJars : [snapshot];
 
@@ -78,6 +81,7 @@ export function JarPostWithdrawScreen({
               </h2>
               <div className="flex flex-col gap-3">
                 {rows.map((row) => {
+                  // Older snapshots may be missing an explicit emoji, so we can always reconstruct one.
                   const emoji =
                     row.emoji ?? getGoalEmojiKeywordOrDefault(row.goalName);
                   const badgeStatus = jarBadgeStatusAfterWithdrawal({

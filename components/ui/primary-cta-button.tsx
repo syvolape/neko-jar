@@ -1,3 +1,5 @@
+/** Shared primary button/link primitive used for the app's orange call-to-action actions. */
+
 import Link from "next/link";
 import type { ReactNode } from "react";
 

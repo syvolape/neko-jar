@@ -1,7 +1,9 @@
+/** Root layout for the whole app. It loads global styles, shared fonts, metadata, and the splash gate wrapper. */
+
 import type { Metadata } from "next";
 import "./globals.css";
-import { SplashGate } from "@/components/splash-gate";
-import { geistMono, geistSans, outfit } from "./fonts";
+import { SplashGate } from "@/components/layout/splash-gate";
+import { geistMono, geistSans, outfit } from "@/lib/fonts";
 
 export const metadata: Metadata = {
   title: "Neko Jar — Goal-based savings",

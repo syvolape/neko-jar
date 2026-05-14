@@ -1,5 +1,7 @@
 "use client";
 
+/** Jar-specific UI module: jar leave goal sheet. */
+
 import { useId } from "react";
 
 import {

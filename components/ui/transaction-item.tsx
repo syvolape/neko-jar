@@ -1,3 +1,5 @@
+/** Reusable row for deposit/withdraw history-style displays. */
+
 import type { ReactNode } from "react";
 
 type Props = {

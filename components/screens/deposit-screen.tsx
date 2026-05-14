@@ -1,10 +1,12 @@
 "use client";
 
+/** Deposit keypad flow. It reads the active jar, lets the user enter an amount, and persists the deposit before returning to `/jar`. */
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { EarnRateInfoSheet } from "@/components/earn-rate-info-sheet";
+import { EarnRateInfoSheet } from "@/components/ui/earn-rate-info-sheet";
 import { InfoIcon } from "@/components/jar/jar-inline-icons";
 import { appendJarCoinCount } from "@/lib/jar-coin-count";
 import {
@@ -61,6 +63,7 @@ export default function DepositScreen() {
   );
 
   useEffect(() => {
+    // Every deposit is scoped to the currently active jar session.
     const session = readJarSession();
     if (!session) {
       router.replace("/create-goal");
@@ -130,10 +133,12 @@ export default function DepositScreen() {
     const depositAmount = Math.round(amount * 100) / 100;
     if (!(depositAmount > 0)) return;
     try {
+      // `/jar` consumes this one-time value to play the coin-drop animation after navigation.
       sessionStorage.setItem(sessionPendingCoinDrop, String(depositAmount));
     } catch {
       // ignore quota / privacy mode
     }
+    // The jar screen reads both the persisted deposits and the derived decorative coin count.
     appendJarCoinCount(goalName, targetAmount, depositAmount);
     appendJarDeposit(goalName, targetAmount, depositAmount);
     notifyJarDepositsUpdated();
@@ -270,7 +275,7 @@ export default function DepositScreen() {
               className="flex size-16 items-center justify-center rounded-full text-[#1E1E1E] active:bg-neutral-100"
               aria-label="Delete"
             >
-              <img src="/icons/delete.svg" alt="" aria-hidden className="h-6 w-6" />
+              <img src="/delete.svg" alt="" aria-hidden className="h-6 w-6" />
             </button>
           </div>
 

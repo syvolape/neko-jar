@@ -1,3 +1,5 @@
+/** Jar-specific UI module: completed jar card. */
+
 import { JarStatusBadge } from "@/components/jar/jar-status-badge";
 import type { JarBadgeStatus } from "@/lib/jar-badge-status";
 

@@ -1,3 +1,5 @@
+/** Jar-specific UI module: jar inline icons. */
+
 export function InfoIcon({ className }: { className?: string }) {
   return (
     <svg

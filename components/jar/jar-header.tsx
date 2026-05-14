@@ -1,3 +1,5 @@
+/** Jar-specific UI module: jar header. */
+
 type Props = {
   goalName: string;
 };

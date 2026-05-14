@@ -1,3 +1,5 @@
+/** Jar-specific UI module: jar history. */
+
 import type { JarDeposit } from "@/lib/jar-deposits";
 
 import { DepositIcon } from "@/components/jar/jar-inline-icons";

@@ -1,5 +1,7 @@
 "use client";
 
+/** Jar-specific UI module: earned amount display. */
+
 import {
   memo,
   useEffect,

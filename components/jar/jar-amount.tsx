@@ -1,3 +1,5 @@
+/** Jar-specific UI module: jar amount. */
+
 type Props = {
   savedAmount: number;
   remaining: number;
